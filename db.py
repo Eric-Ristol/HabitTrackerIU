@@ -2,12 +2,12 @@ import sqlite3, os
 from datetime import datetime, timedelta
 
 
-"""Build function to ensure correct inputs"""
+"""Functions for correct operation"""
 
 
 def date_format(date):
     #Date _format is intended to force the user to introduce a date in the format YYYY-MM-DD, also avoids the user to introduce a date with spaces.
-    #There is no need to execute date_format with empty().
+    #There is no need to execute date_format with empty(), because .strip() is inside this function.
     while True:
         try:
             date.strip()
@@ -16,18 +16,19 @@ def date_format(date):
             date = input("Your date does not follow (YYYY-MM-DD). Try again:")
 
 
-#This function is intended to use this script for main.db and test.db
 def connection(database_name):
+    #This function is intended to change between main.db and test.db, but could be used for create any other databases
     global db_name
     db_name = database_name
 
-#Erase db
+
 def erase(database_name):
+    #Erase db completely, used in test_habit_tracker.py
     os.remove(database_name)
 
 
-"""Main habits table"""
 
+"""Main habits table"""
 
 
 
@@ -38,21 +39,21 @@ def create_habits_table():
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         habit_name TEXT NOT NULL,
                         description TEXT NOT NULL,
-                        periodicity INTEGER NOT NULL,
+                        frequency INTEGER NOT NULL,
                         creation_date TEXT NOT NULL)''')
     connect.commit()
 
 
-def insert_habit(habit_name, description, periodicity, creation_date):
+def insert_habit(habit_name, description, frequency, creation_date):
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
-    cursor.execute('''INSERT INTO habits (habit_name, description, periodicity, creation_date) VALUES (?, ?, ?, ?)''', (habit_name, description, periodicity, creation_date,))
+    cursor.execute('''INSERT INTO habits (habit_name, description, frequency, creation_date) VALUES (?, ?, ?, ?)''', (habit_name, description, frequency, creation_date,))
     connect.commit()
     connect.close()
 
 
 def rename_habit_in_habits_table(new_habit_name, new_description, habit_name):
-    #It's remarkable that the creation date is not modified, neither the periodicity.
+    #It's remarkable that the creation date is not modified, neither the frequency.
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
 
@@ -75,29 +76,34 @@ def delete_habit_in_habits_table(habit_name):
     connect.close()
 
 
-#This function is key to avoid errors when the user want to perform any action that is not create an habit, this fucntion return the periodicity of the habit and a boolean that indicates if the habit exists or not, the habit_name table with the checks off, is not checked because the program was structured to ensure that this tables are always created, deleted and modified with the habit into the habits table, so it;s no need to search it.
-def search_habit(habit_name):
+def search_habit(habit_name)->bool:
+    #This function is key to avoid errors when the user want to perform any action.
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     query = f'''SELECT * FROM habits WHERE habit_name = ?'''
     cursor.execute(query, (habit_name,))
     habit_info = cursor.fetchone()
-    print(f"INFO FROM DATABASE: {habit_info}")#Print is just for testing purposes.Not necessary.
+    #print(f"INFO FROM DATABASE: {habit_info}")#Print is just for testing purposes.Not necessary.
     if habit_info is None:
-        return habit_name, False #Return habut_name is not usefull for anything, is just ot make the funciton more compatible into the habit class.
-    else:
-        return habit_info[3], True #habitinfo[3]==periodicity
-    #I can have different returns because of th afterwards use of this functions, because I ensure certain conditions before execute it.
+        return 0, False #The return of the number 0 is only for compatibilty reasons, it make this function more handy.
 
-
-
-"""Habit check off table"""
+    return habit_info[3], True #habitinfo[3]==frequency
 
 
 
 
+"""Habit check off tables"""
 
-def create_habit_checkoff_table(habit_name, today): 
+
+
+
+
+def create_habit_checkoff_table(habit_name, today):
+    """
+    This function creates a table with the name of a new habit in which checks off are registered. 
+    Also is filled with an initial value with the creation date and checking as 0.
+    This initial value is fundamental to later create intermediate dates from the creation date to the first check off.
+    """
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     #The table is created without information inside
@@ -109,9 +115,7 @@ def create_habit_checkoff_table(habit_name, today):
     )'''
     cursor.execute(query)
     connect.commit()
-
-    #First row is created with the creation date and the default checking value is 0.
-    #This empty value that is filled with the creation date is important to later autocreate the dates between the creation date and the first check off.
+    #Initial value
     query = f'''INSERT INTO habit_{habit_name} (event_date, checking) VALUES ( ?, ? )'''
     cursor.execute(query, (today, 0))
     connect.commit()
@@ -128,22 +132,30 @@ def delete_habit_checkoff_table(habit_name):
 
 
 def rename_habit_checkoff_table(new_habit_name, habit_name):
-        connect = sqlite3.connect(f"{db_name}")
-        cursor = connect.cursor()
-        query = f'''ALTER TABLE habit_{habit_name} RENAME TO habit_{new_habit_name}'''
+    #For this function habit name is always passed to the database with underscores, because SQL does not accept spaces in the name of a table.
+    connect = sqlite3.connect(f"{db_name}")
+    cursor = connect.cursor()
+    try:
+        query = f'''ALTER TABLE habit_{habit_name} RENAME TO habit_{new_habit_name}''' 
         cursor.execute(query)
-        connect.commit()
-        connect.close()
+    except sqlite3.OperationalError: #SQL is not case-sensitive, so it would not distinguish between habit_hello and habit_Hello and will throw this error in case of some kind of typo corecting of the habit_name, so with this try except I avoid this little problematic.
+        pass
+    connect.commit()
+    connect.close()
 
 
-#This fucntion is intended to ensure check-off date is after the creation date and not in the future.
-def compare_creation_checkoff_dates(habit_name, check_off_date):
+def compare_creation_checkoff_dates(habit_name, check_off_date)->str:
+    """
+    Only used into habit class -> fuction: check_off_date
+    This function is key when ensuring that check off is not in the future nor before to the creation date of the habit, ensuring a good logic in the program behaviour.
+    Regardless is not relationed with this function is good to know that checks off in the future are not allowed, but create an habit in the future is allowed, that's because of the common use of for instance New Year's resolutions.
+    """
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     query = f'''SELECT * FROM habits WHERE habit_name = ?'''
     cursor.execute(query,(habit_name,))
-    search_result = cursor.fetchone() #Here no if statemnt to check the existence of something inside the table is created because when this table is created is always filled with the creation date, so always have someting to read, also thsi table never has deletions.
-    creation_date = search_result[4] #In the table this caolumn is called event_date
+    search_result = cursor.fetchone() #Here no if statemnt to check the existence of something inside the table is created because when this table is created is always filled with the creation date, so always have someting to read, also this table never is cleared, only can change it's name or be deleted if the habit is.
+    creation_date = search_result[4] #search_result[4] == event_date
     connect.close()
 
     #Tranform string dates to date objects
@@ -151,7 +163,7 @@ def compare_creation_checkoff_dates(habit_name, check_off_date):
     check_off_date = datetime.strptime(check_off_date, "%Y-%m-%d").date()
     today = datetime.today().date()
 
-    #Check if the check-off date is valid. Not before the creation date nor in the future of today.
+    #Check if the check-off date is valid. Not before the creation date nor in the future from today.
     while check_off_date < creation_date or check_off_date > today:
         if check_off_date < creation_date:
             print(f"The check-off date ({check_off_date}) is older than the creation date ({creation_date})!")
@@ -160,61 +172,61 @@ def compare_creation_checkoff_dates(habit_name, check_off_date):
         
         check_off_date = date_format(input("Introduce a valid check off date (YYYY-MM-DD): "))
 
-    return check_off_date.strftime("%Y-%m-%d")
-
-
-#Created to be executed into create_intermediate_dates_checkoff_table().
-def get_last_value_checkoff_table(habit_name, check_off_date):
-    connect = sqlite3.connect(f"{db_name}")
-    cursor = connect.cursor()
-    query = f'''SELECT * FROM habit_{habit_name} ORDER BY check_id DESC LIMIT 1'''
-    cursor.execute(query)
-    last_date = cursor.fetchone()
-    last_date = last_date[1]#None is not possible because the existence of the habit is being checked beforehand in the funciton Habit.check_off() and the check off table is always creadted or deleted at the same time of the habit inot hte habits table.
-    connect.commit()
-    connect.close()
-    return last_date
-
+    return check_off_date.strftime("%Y-%m-%d") #return this value is relevant bacuse it could be the same introduced check off date or could be a new one that fits the requierements.
 
 
 def create_intermediate_dates_checkoff_table(habit_name, check_off_date):
-    last_date = get_last_value_checkoff_table(habit_name,check_off_date)
-    
+    """
+    This function creates as many events as days in between of the last value in the check_off_table of a habit and the check off date.
+    Is used in both check off functions in the habit class
+    """
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
+    #Get the last value in it's check off table
+    query = f'''SELECT * FROM habit_{habit_name} ORDER BY check_id DESC LIMIT 1'''
+    cursor.execute(query)
+    last_date = cursor.fetchone()
+    last_date = last_date[1]#None is not possible because the existence of the habit is being checked beforehand.
+
+    #Creation of the intermediate dates through a loop
     start_date = datetime.strptime(last_date, "%Y-%m-%d") + timedelta(days=1)
     check_off_date = datetime.strptime(check_off_date, "%Y-%m-%d")
+
     while start_date <= check_off_date:
         start = start_date.strftime("%Y-%m-%d") #Change the date to a object date to be able to use it in the query.
         query = f'''INSERT INTO habit_{habit_name} (event_date, checking) VALUES ( ?, ? )'''
-        cursor.execute(query, (start, 0)) #With that we automaticaly assign 0 to the checking value to the intermediate dates btewwen the last check off until the selected day or today, depending on the user choice.
+        cursor.execute(query, (start, 0)) #With that we automaticaly assign 0 to the checking value to the intermediate dates between the last check off until the selected day or today.
         start_date = start_date + timedelta(days=1)
     connect.commit()
     connect.close()
     return check_off_date #This is the new check off date that is going to be used in habits.py further.
+    #maybe delete
 
-
-def check_off(habit_name,check_off_date, periodicity):
-    #First I build something that works with daily, and after with custom periodicity.
+def check_off(habit_name,check_off_date, frequency):
+    """
+    Update values of events into the check off table of an habit from 0 to 1
+    As many frequence the habit has as many checks off, i.e if an habit is every 7 days, every time is checked off, the selcted day and 6 days before are checked off (0->1)
+    """
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     check_off_date = datetime.strptime(check_off_date, "%Y-%m-%d")  # Convert string to a datetime object
-    start_date = check_off_date - timedelta(days=periodicity-1)
+    start_date = check_off_date - timedelta(days=frequency-1)
     while start_date <= check_off_date:
         str_start_date = start_date.strftime("%Y-%m-%d")#I transform the date to a string to be able to use it in the query.
         query = f'''UPDATE habit_{habit_name} SET checking = 1 WHERE event_date = ?'''
         cursor.execute(query, (str_start_date,))
-        start_date += timedelta(days=1)#Adds one day to the start day to complete all days in the inbetween period.
+        start_date += timedelta(days=1)#Adds one day to the start day to complete all days in the inbetween frequence.
     connect.commit()#The commit statement could be inside the loop, but I prefer to have it outside to probably avoid longer times of execution.
     connect.close()
 
 
-def show_check_off(habit_name, check_off_date, periodicity):
+def show_check_off(habit_name, check_off_date, frequency):
+    #Only intended for verification purpose and responsibilty of the app with the user.
     #This function can be reused to see all the checks of the table wih some adjust.
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     check_off_date = datetime.strptime(check_off_date, "%Y-%m-%d")  # Convert string to a datetime object
-    start_date = check_off_date - timedelta(days=periodicity-1)
+    start_date = check_off_date - timedelta(days=frequency-1)
     while start_date <= check_off_date:
         str_start_date = start_date.strftime("%Y-%m-%d")#I transform the date to a string to be able to use it in the query.
         query = f'''SELECT * FROM habit_{habit_name} WHERE event_date = ?'''
@@ -225,22 +237,21 @@ def show_check_off(habit_name, check_off_date, periodicity):
 
 
 def search_checkoff_table(habit_name):
+    #Only used in test_habit_tracker.py
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
-
     query = f'''SELECT name FROM sqlite_master WHERE type='table' AND name=?'''
-    
     cursor.execute(query, (f"habit_{habit_name}",))
     table_exists = cursor.fetchone()
     connect.close()
     if table_exists is None:
         return False
-    else:
-        return True
+    return True
 
 
 def search_check_off(habit_name, check_off_date):
-    #This fucntion only return the date of a successfull chech off(1), and if chech off is 0 returns an empty list.
+    #Only used in test_habit_tracker.py
+    #This function only returns the date of a successfull check off(1), and if chech off is 0 returns an empty list.
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     query = f'''SELECT * FROM habit_{habit_name} WHERE event_date = ? AND checking = ?'''
