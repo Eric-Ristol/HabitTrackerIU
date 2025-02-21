@@ -1,10 +1,9 @@
 import sqlite3
-from functools import reduce
 import db
-from db import connection
+
 
     
-def connection(database_name):
+def connection(database_name): 
     global db_name
     db_name = database_name
 
@@ -22,38 +21,29 @@ def list_habits()->list:
     query = f'''SELECT habit_name, description, frequency, creation_date FROM habits'''
     cursor.execute(query)
     habits_names_list = cursor.fetchall()
-    habits_names_list = [('habit_name, description, frequency, creation_date')] + habits_names_list
+    habits_names_list = [('habit name, description, frequency, creation date')] + habits_names_list
     return habits_names_list
 
 
 
 """List of all habits with the same frequency"""
 
-def same_frequence_list(frequency)->list:
+def same_frequency_list(frequency)->list:
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     query = f'''SELECT habit_name FROM habits WHERE frequency = ?'''
     cursor.execute(query,(frequency,))
     frequency_names_list = cursor.fetchall()
-    if not frequency_names_list:
+    if not frequency_names_list:#When a list is empty, it returns False by default
         return False
     return frequency_names_list
 
 
-"""This functions are used for the streaks functions and struggle functions"""
+"""These functions are used for the streaks functions and struggle functions"""
 
 
 def get_checks(habit_name)->list:
-    """
-    This funciton returns a binary list of 0s and 1s that are the checks of a habit.
-    If the habit does not exist, the function returns False, this funcitonalitiy usually was used into choices, but because of 4 choices use this single funciton I prefered to put it here to not repeat code.
-    """
-    print("get_checks executed")
-    frequency, success = db.search_habit(habit_name) #In this case frequency is not used, but I have to creaste the variable because the function return 2 values, one is frequency and the other is a boolean.
-    if not success:
-        print("This habit does not exist!")
-        return False #If the habit is not found, the rest of the function is not executed.
-    
+    #This function returns a binary list of 0s and 1s that are the checks of a habit used in streak and struggle functions.
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     query = f'''SELECT checking FROM habit_{habit_name}'''
@@ -62,31 +52,27 @@ def get_checks(habit_name)->list:
     checks_list = [item[0] for item in result]  #Get only the first value of each tuple
     return checks_list
 
-#For overall functions
-def only_name_list():
 
+def only_names_list()->list:
+    #Returns a list of all habit names, only names, that's the main diference with list_habits. This function is used in overall streak and struggle.
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     query = f'''SELECT habit_name FROM habits'''
     cursor.execute(query)
     habits_names_list = cursor.fetchall()
     if habits_names_list is None:
-        print("There are no habits created into the database, please, create them first.")
+        print("There are no habits created in the database, please, create them first.")
         return False
     return habits_names_list
 
 
 
-"""- and return the longest run streak for a given habit."""
+"""Longest run streak for a given habit."""
 
 
-
-#With this function we get the highest streak. Also is posible to obtain all the streak.
-def streak(habit_name):
+def streak(habit_name)->int:
+    """With this function we get the highest streak. Also is posible to obtain all the streaks with just returning streak ."""
     checks_list = get_checks(habit_name)
-    if not checks_list or checks_list == False: #This means if check list is empty.
-        return False
-    
     length = len(checks_list)
     count = []
     index = 0
@@ -96,35 +82,37 @@ def streak(habit_name):
         read = checks_list[index]
         if read == 1:
             count.append(1)
-        elif read == 0:#The appropiate syntax is else because only 0 and 1 are possible, but I wrote it in this way to make it more readable.
-            if count:
+        elif read == 0:#The appropiate syntax is else because only 0 and 1 are possible, but I wrote it in this way to make it more readable, and with the other else statement I ensure an easy debugging in case the paramenter is changed by accident.
+            if count:#Checks that count is not empty, if empty == False if filled == True
                 streak.append(sum(count))
                 count = []
+        else:
+            raise ValueError("The check off table has to be filled with 0s and 1s only.")
         index += 1
-    #This condition appends the count amount in case of the list does not end in a 0 or 0s.
-    if index == length:
-        if count:
+    
+    if index == length:#This condition appends the count amount in case the list does not end in a 0 or 0s.
+        if count:#Checks that count is not empty, if empty == False if filled == True
             streak.append(sum(count))
             count = []
-    if not streak: #This checks if the list is empty, and if it is assigns 0 to the list.
+    if not streak: #This checks if the list is empty, and if it is assigns 0 to the list. This could happen if the list is only 0s.
         streak = [0]
     highest_streak = max(streak)
     return highest_streak
 
 
-"""- return the longest run streak of all defined habits,"""
+
+"""Longest run streak of all defined habits,"""
 
 
-
-def overall_streak():
-    habits_names_list = only_name_list()
-    habits_names_list = [item[0] for item in habits_names_list]#COnverts the list of tuples into a list of strings  
+def overall_streak()->int:
+    habits_names_list = only_names_list()
+    habits_names_list = [item[0] for item in habits_names_list]#Transforms the list of tuples into a list of strings  
     num_habits = len(habits_names_list)
     index = 0
     overall_streak = [0]
     while index < num_habits:
-        habit_name = habits_names_list[index]
-        overall_streak.append(streak(habit_name))# The [0] is because habit_name from habits_names_list returns a list with habit_name,description,frequency and creation_date, but I only need the habit_name.
+        habit_name = habits_names_list[index] # [index] is because habit_name from habits_names_list returns a list with all habits names, but I need to read one by one for every loop cycle.
+        overall_streak.append(streak(habit_name))
         index += 1
     longest_streak = max(overall_streak)
     
@@ -139,11 +127,9 @@ def overall_streak():
 
 
 
-def struggle(habit_name):#Is just the straks function but counting 0s instead of 1s
+def struggle(habit_name)->int:
+    """With this function we get the highest struggle. Also is posible to obtain all the struggles with just returning struggle ."""
     checks_list = get_checks(habit_name)
-    if not checks_list or checks_list == False: #This means if check list is empty.
-        return False
-
     length = len(checks_list)
     count = []
     index = 0
@@ -153,17 +139,19 @@ def struggle(habit_name):#Is just the straks function but counting 0s instead of
         read = checks_list[index]
         if read == 0:
             count.append(1)
-        elif read == 1:
+        elif read == 1:#The appropiate syntax is else because only 0 and 1 are possible, but I wrote it in this way to make it more readable, and with the other else statement I ensure an easy debugging in case the paramenter is changed by accident.
             if count: #Checks that count is not empty, if empty == False if filled == True
                 struggle.append(sum(count))
                 count = []
+        else:
+            raise ValueError("The check off table has to be filled with 0s and 1s only.")
         index += 1
-    #This condition appends the count amount in case of the list does not end in a 0 or 0s.
-    if index == length:
-        if count:
+
+    if index == length:#This condition appends the count amount in case the list does not end in a 0 or 0s.
+        if count:#Checks that count is not empty, if empty == False if filled == True
             struggle.append(sum(count))
             count = []
-    if not struggle: #This checks if the list is empty, if is empty returns false, which is the problematic outocme.
+    if not struggle: #This checks if the list is empty, and if it is assigns 0 to the list. This could happen if the list is only 1s.
         struggle = [0]
     highest_struggle = max(struggle)
     return highest_struggle
@@ -171,20 +159,21 @@ def struggle(habit_name):#Is just the straks function but counting 0s instead of
 
 
 
-"""- return the longest struggle of all defined habits,"""
+"""Longest struggle of all defined habits,"""
 
 
-def overall_struggle():
-    habits_names_list = only_name_list()
-    habits_names_list = [item[0] for item in habits_names_list]#COnverts the list of tuples ino a list of strings  
+def overall_struggle()->int:
+    habits_names_list = only_names_list()
+    habits_names_list = [item[0] for item in habits_names_list]#Transforms the list of tuples into a list of strings.
     num_habits = len(habits_names_list)
     index = 0
     overall_struggle= [0]
     while index < num_habits:
-        habit_name = habits_names_list[index]
-        overall_struggle.append(struggle(habit_name))# The [0] is because habit_name from habits_names_list returns a list with habit_name,description,frequency and creation_date, but I only need the habit_name.
+        habit_name = habits_names_list[index]# [index] is because habit_name from habits_names_list returns a list with all habits names, but I need to read one by one for every loop cycle.
+        overall_struggle.append(struggle(habit_name))
         index += 1
     longest_struggle = max(overall_struggle)
+
     return longest_struggle
 
 
@@ -192,11 +181,11 @@ def overall_struggle():
 
 
 
-
+"""Build function to ensure correct inputs"""
 
 def empty(value):
     #This function ensures that the user does not enter an empty value, eliminates innecesary spaces, and avoids the user to introduce special characters.
-    #In case of just inncesary spaces, the function eliminates them, and don't ask the suer to write the sentence again
+    #In case of just unnecessary spaces, the function eliminates them, and don't ask the user to write the sentence again.
     while True:
         check = value.strip()
         if all(char.isalnum() or char.isspace() for char in check) and check:
@@ -220,14 +209,19 @@ def module():
 
         choice = empty(input("\nEnter your choice (1-7): "))
         
-        
-        if choice == "1":
-            habits_names_list = list_habits()
-            habits_names_list[0] = habits_names_list[0].replace('_', ' ')  #Modify the header
-            # Modify each tuple inside the data
-            habits_names_list[1:] = [tuple(val.replace('_', ' ') if isinstance(val, str) else val for val in row) for row in habits_names_list[1:]]#This line was extracted directly from a chatGPT answer because of it's complexity and irrelevance in the overall of the project.
-            print(habits_names_list)
 
+        if choice == "1":
+            if db.check_if_habits_empty():
+                print("There are no active habits created in the database, please, create them first.")
+                continue
+            habits_names_list = list_habits()
+            print()
+            print(habits_names_list[0])
+            print()
+            for index in range(1, len(habits_names_list)):#This for loop is intended to remove the underscores from the habit names and descriptions, and print the list of habits with an empty line between every tuple of the original habits_names_list(i.e the habit with it's characteristics).
+                habits_names_list[index] = tuple( val.replace("_"," ") if isinstance(val, str) else val for val in habits_names_list[index])
+                print(habits_names_list[index])
+                print()
         elif choice == "2":
             while True: #Check if the input value is an integer or not, and if not asks again until an intger is introduced.
                 try:
@@ -238,29 +232,47 @@ def module():
                     break
                 except ValueError:
                     print("This value has to be an integer!")
-            frequency_names_list = same_frequence_list(frequency)
-            if frequency_names_list == False:
+            frequency_names_list = same_frequency_list(frequency)
+            if not frequency_names_list:
                 print("There are no habit with this frequency")
                 continue
-            print(frequency_names_list)
+            print()
+            for index in range(0, len(frequency_names_list)):
+                frequency_names_list[index] = tuple( val.replace("_"," ") if isinstance(val, str) else val for val in frequency_names_list[index])
+                print(frequency_names_list[index])
+                print()
 
 
         elif choice == "3":
+            if db.check_if_habits_empty():
+                print("There are no active habits created in the database, please, create them first.")
+                continue
             longest_streak = overall_streak()
             print(f"Longest streak: {longest_streak} days")
         elif choice == "4":
             habit_name = empty(input("For which habit do you want to get the longest streak?: "))
             habit_name = habit_name.replace(" ", "_")
+            frequency, success = db.search_habit(habit_name) #In this case frequency is not used, but I have to creaste the variable because the function return 2 values, one is frequency and the other is a boolean.
+            if not success:
+                print("This habit does not exist!")
+                continue #If the habit is not found, the rest of the function is not executed.
             highest_streak = streak(habit_name)
             print( f"{highest_streak} days")
 
         
         elif choice == "5":
+            if db.check_if_habits_empty():
+                print("There are no active habits created in the database, please, create them first.")
+                continue
             longest_struggle = overall_struggle()
             print(f"Longest struggle: {longest_struggle} days")
         elif choice == "6":
             habit_name = empty(input("For which habit do you want to get the longest struggle?: "))
             habit_name = habit_name.replace(" ", "_")
+            frequency, success = db.search_habit(habit_name) #In this case frequency is not used, but I have to creaste the variable because the function return 2 values, one is frequency and the other is a boolean.
+            if not success:
+                print("This habit does not exist!")
+                continue #If the habit is not found, the rest of the function is not executed.
             highest_struggle = struggle(habit_name)
             print( f"{highest_struggle} days")
 
@@ -271,3 +283,4 @@ def module():
 
         else:
             print("Invalid choice. Please enter a number between 1 and 7.")
+
