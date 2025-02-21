@@ -186,7 +186,7 @@ def compare_creation_checkoff_dates(habit_name, check_off_date)->str:
     return check_off_date.strftime("%Y-%m-%d") #return this value is relevant bacuse it could be the same introduced check off date or could be a new one that fits the requierements.
 
 
-def create_intermediate_dates_checkoff_table(habit_name, check_off_date):
+def create_intermediate_dates_checkoff_table(habit_name, check_off_date)->str:
     """
     This function creates as many events as days in between of the last value in the check_off_table of a habit and the check off date.
     Is used in both check off functions in the habit class
@@ -247,7 +247,7 @@ def show_check_off(habit_name, check_off_date, frequency):
         start_date = start_date + timedelta(days=1)
 
 
-def search_checkoff_table(habit_name):
+def search_checkoff_table(habit_name)->bool:
     #Only used in test_habit_tracker.py
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
@@ -260,9 +260,9 @@ def search_checkoff_table(habit_name):
     return True
 
 
-def search_check_off(habit_name, check_off_date):
+def search_check_off(habit_name, check_off_date)->str:
     #Only used in test_habit_tracker.py
-    #This function only returns the date of a successfull check off(1), and if chech off is 0 returns an empty list.
+    #This function only returns the date of a successfull check off(1), and if check off is 0 returns an empty list.
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
     query = f'''SELECT * FROM habit_{habit_name} WHERE event_date = ? AND checking = ?'''
