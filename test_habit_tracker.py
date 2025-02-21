@@ -70,10 +70,10 @@ def test_check_off_date():
 
 
 def test_list():
-    assert analytics.list_habits() == ['habit_name, description, frequency, creation_date', ('Test_name', 'Test_description', 1, '2025-01-01')]
+    assert analytics.list_habits() == ['habit name, description, frequency, creation date', ('Test_name', 'Test_description', 1, '2025-01-01')]
 
-def test_same_frequence():
-    assert analytics.same_frequence(1) == [('Test_name',)]
+def test_same_frequency():
+    assert analytics.same_frequency_list(1) == [('Test_name',)]
 
 def test_longest_streak():
     #To ensure that it really compare between several habits, let's create another 2 habits(with different frequencies) and check off them today.
@@ -95,5 +95,5 @@ def test_struggle():
     assert analytics.struggle(habit_name="Test_name") == 29
     assert analytics.struggle(habit_name="Test_name2") == 28
     assert analytics.struggle(habit_name="Test_name3") == 27
-    db.erase("test.db")#finally I delete the db to not create incompatibility if the test is run more than once
+    db.erase("test.db")#finally I delete the db to not create incompatibility if the test is run more than once or the functions are edited.
 
