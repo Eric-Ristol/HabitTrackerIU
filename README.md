@@ -6,9 +6,13 @@ Object-Oriented Programming (OOP) is required in habit.py, while the rest of the
 
 ## Features
 -Implementation of an easy CLI.
+
 -Any frequency greater than 1 day can be used.
+
 -Computes streaks and struggles.
+
 -A profesional storage solution like SQLite3 was used.
+
 -Check completion is possible at any time between of the habit creation and today. 
 
 ## Required packages
