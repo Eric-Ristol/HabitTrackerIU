@@ -55,7 +55,7 @@ def main():
 
             habit_name = empty(input("Enter the habit name(no special characters, numbers allowed): "))
             habit_name = habit_name.replace(" ", "_")
-            habit_name, success = db.search_habit(habit_name) #The retunr of habit_name is not usefull.
+            frequency, success = db.search_habit(habit_name) #The return of habit_name is not usefull.
             if success:
                 print("This habit already exist!")
                 continue
@@ -63,10 +63,10 @@ def main():
             description = description.replace(" ", "_")
             while True: #Check if the input value is an integer or not, and if not asks again until an intger is introduced.
                 try:
-                    periodicity = int(input("Enter the periodicity (in days): "))
-                    if periodicity < 1:
-                        print("The periodicity has to be greater than 0!")
-                        return int(empty(str(periodicity)))#I have to transform the value into a string to manage it with the empty function because .strip is not possible with integers.Finally I transform it again into an INTEGER because the database only manages INTEGER in the periodicicty value.
+                    frequency = int(input("Enter the frequency (in days): "))
+                    if frequency < 1:
+                        print("The frequency has to be greater than 0!")
+                        return int(empty(str(frequency)))#I have to transform the value into a string to manage it with the empty function because .strip is not possible with integers.Finally I transform it again into an INTEGER because the database only manages INTEGER in the frequency value.
                     break
                 except ValueError:
                     print("This value has to be an integer!")
@@ -75,7 +75,7 @@ def main():
             custom_date = str(date_format(input("Enter the creation date (YYYY-MM-DD): "))) #For testing reasons, usually self.creation_date = today
             creation_date = custom_date
             
-            if h.create(habit_name, description, periodicity,creation_date):
+            if h.create(habit_name, description, frequency,creation_date):
                 habit_name = habit_name.replace("_", " ")
                 print(f"Habit '{habit_name}' created successfully!")
     
@@ -87,12 +87,12 @@ def main():
             habit_name = empty(input("Enter the name of the habit you want to modify: "))
             habit_name = habit_name.replace(" ", "_")
             #Look for the existence of the habit.
-            search_result, success = db.search_habit(habit_name) #In this case periodicity is not used, but I have to creaste the variable because the function return 2 values, one is periodicity and the other is a boolean.
+            frequency, success = db.search_habit(habit_name) #In this case frequency is not used, but I have to creaste the variable because the function return 2 values, one is frequency and the other is a boolean.
             if not success:
                 print("This habit does not exist!")
                 continue #If the habit is not found, the rest of the function is not executed.
             
-            #Assignation of new values for th habit
+            #Assignation of new values for the habit
             new_habit_name = input("What is the new name of the habit(no special characters, numbers allowed): ")
             new_habit_name = new_habit_name.replace(" ", "_")
             new_description = input("What is the new description of the habit(no special characters, numbers allowed): ")
@@ -110,7 +110,7 @@ def main():
             habit_name = empty(input("Enter the name of the habit you want to delete: "))
             habit_name = habit_name.replace(" ", "_")
             #Look for the existence of the habit.
-            search_result, success = db.search_habit(habit_name)
+            frequency, success = db.search_habit(habit_name)
             if not success:
                 print("This habit does not exist!")
                 continue #If the habit is not found, the rest of the function is not executed.
@@ -125,8 +125,8 @@ def main():
 
             habit_name = empty(input("Enter the name of the habit you want to check off: "))
             habit_name = habit_name.replace(" ", "_")
-            #Look for the existence of the habit and get the periodicty of the habit.
-            periodicity, success = db.search_habit(habit_name)
+            #Look for the existence of the habit and get the frequency of the habit.
+            frequency, success = db.search_habit(habit_name)
             if not success:
                 print("This habit does not exist!")
                 """habit_name = empty(input("Enter the name of the habit you want to check off(no special characters, numbers allowed): "))"""#This is an optional functionality that can be added but I don't like bacause it makes impossible to go out if you don;t remember some habit name, but still I think it's a good to keep it in case I want to improve that creating som ekind of sub menu to choose if search again or if directly create what was written.
@@ -140,13 +140,13 @@ def main():
             decision = empty(input("Enter your choice (1-2): "))
 
             if decision == "1":
-                if  h.check_off_today(habit_name,periodicity):
+                if  h.check_off_today(habit_name,frequency):
                     habit_name = habit_name.replace("_", " ")
                     print(f"Habit '{habit_name}' checked off successfully!")
             
             elif decision == "2":
                 check_off_date = str(date_format(input("Enter the date you want to check off (YYYY-MM-DD): ")))# I need to convert it to string because date_format returns a dattime object
-                if h.check_off_date(habit_name,check_off_date,periodicity):
+                if h.check_off_date(habit_name,check_off_date,frequency):
                     habit_name = habit_name.replace("_", " ")
                     print(f"Habit '{habit_name}' checked off at {check_off_date} successfully!")
 
@@ -167,3 +167,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
