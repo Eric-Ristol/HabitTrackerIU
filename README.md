@@ -28,6 +28,14 @@ if the above commands doesn't work you should try with:
 
 `pip3 install pytest`
 
+## How to run the program
+-If you want to use it without predefined data, you just have to run main.py and interact with the CLI.
+
+-If you want to use it with the predefined data, predefined_data.py must be executed before main.py. In both cases, main.db will be the db, and if you do both the data will be merged without any problem.
+
+-If tests are run, you do not have to worry about your current database information because an alternate test.db is created for this purpose.
+
+
 ## About testing
 Running test_habit.py executes all functions that users can interact with.
 Only positive cases are considered, as all possible failures are handled in main.py and the analytics.py module.
