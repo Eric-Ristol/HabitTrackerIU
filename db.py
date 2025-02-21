@@ -89,6 +89,17 @@ def search_habit(habit_name)->bool:
 
     return habit_info[3], True #habitinfo[3]==frequency
 
+def check_if_habits_empty()->bool:
+    #This function is only used in analytics in the overall functions.
+    connect = sqlite3.connect(f"{db_name}")
+    cursor = connect.cursor()
+    cursor.execute('''SELECT COUNT(*) FROM habits;''')
+    status = cursor.fetchone()
+    status = status[0]#The return value that SQL returns is a tuple(0,) so I have to transform it into an integer.
+    if status == 0:
+        return True
+    return False
+
 
 
 
@@ -205,7 +216,7 @@ def create_intermediate_dates_checkoff_table(habit_name, check_off_date):
 def check_off(habit_name,check_off_date, frequency):
     """
     Update values of events into the check off table of an habit from 0 to 1
-    As many frequence the habit has as many checks off, i.e if an habit is every 7 days, every time is checked off, the selcted day and 6 days before are checked off (0->1)
+    As frequent the habit is as many checks off, i.e if an habit is every 7 days, every time is checked off, the selcted day and 6 days before are checked off (0->1)
     """
     connect = sqlite3.connect(f"{db_name}")
     cursor = connect.cursor()
@@ -215,7 +226,7 @@ def check_off(habit_name,check_off_date, frequency):
         str_start_date = start_date.strftime("%Y-%m-%d")#I transform the date to a string to be able to use it in the query.
         query = f'''UPDATE habit_{habit_name} SET checking = 1 WHERE event_date = ?'''
         cursor.execute(query, (str_start_date,))
-        start_date += timedelta(days=1)#Adds one day to the start day to complete all days in the inbetween frequence.
+        start_date += timedelta(days=1)#Adds one day to the start day to complete all days in the inbetween frequency.
     connect.commit()#The commit statement could be inside the loop, but I prefer to have it outside to probably avoid longer times of execution.
     connect.close()
 
@@ -265,3 +276,4 @@ def search_check_off(habit_name, check_off_date):
 
     print(check_off_confirmation)
     return check_off_confirmation
+
