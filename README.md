@@ -18,13 +18,9 @@ Object-Oriented Programming (OOP) is required in habit.py, while the rest of the
 ## Required packages
 These are the strings that have to be input in your terminal to install the packages to run this code.
 
-`pip install sqlite3`
-
 `pip install pytest`
 
 if the above commands doesn't work you should try with:
-
-`pip3 install sqlite3`
 
 `pip3 install pytest`
 
