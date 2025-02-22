@@ -276,4 +276,3 @@ def search_check_off(habit_name, check_off_date)->str:
 
     print(check_off_confirmation)
     return check_off_confirmation
-
