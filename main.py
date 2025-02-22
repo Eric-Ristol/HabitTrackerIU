@@ -7,14 +7,15 @@ from datetime import datetime
 
 
 def empty(value):
-    #This function ensures that the user does not enter an empty value, eliminates innecesary spaces, and avoids the user to introduce special characters.
-    #In case of just unncesary spaces, the function eliminates them, and don't ask the user to write the sentence again.
+    #This function ensures deletion of unnecessary spaces, no special characters and substitute spaces for underscores
     while True:
         check = value.strip()
         if all(char.isalnum() or char.isspace() for char in check) and check:
+            check = check.replace(" ", "_")
             return check
         print("This value is empty, or has special characters. Please enter valid value.")
         value = input("Try again: ")
+
 
 
 def date_format(date):
@@ -33,10 +34,10 @@ def date_format(date):
 def main():
     
     #Initalizing functions
+    h = habit.Habit("0","0",1,"2000-01-01") #assignation of habit class to a variable
     db.connection("main.db")
     analytics.connection("main.db")
     db.create_habits_table()
-    h = habit.Habit(0,0,1,"0000-00-00")#assignation of habit class to a variable
 
     while True:
         print("\nHabit Tracker CLI")
@@ -54,7 +55,7 @@ def main():
             print("\nCreating a new habit...")
 
             habit_name = empty(input("Enter the habit name(no special characters, numbers allowed): "))
-            habit_name = habit_name.replace(" ", "_")
+            
             frequency, success = db.search_habit(habit_name) #The return of habit_name is not usefull.
             if success:
                 print("This habit already exist!")
@@ -84,8 +85,7 @@ def main():
             print("\nModifying an existing habit...")
 
             habit_name = empty(input("Enter the name of the habit you want to modify: "))
-            habit_name = habit_name.replace(" ", "_")
-
+            
             frequency, success = db.search_habit(habit_name) #In this case frequency is not used, but I have to creaste the variable because the function return 2 values, one is frequency and the another is a boolean.
             if not success:
                 print("This habit does not exist!")
@@ -93,13 +93,12 @@ def main():
             
             #Assignation of new values for the habit
             new_habit_name = empty(input("What is the new name of the habit(no special characters, numbers allowed): "))
-            new_habit_name = new_habit_name.replace(" ", "_")
             new_description = input("What is the new description of the habit(no special characters, numbers allowed): ")
             new_description = new_description.replace(" ", "_")
 
             if h.modify(habit_name,new_habit_name,new_description):
                 habit_name = habit_name.replace("_", " ")
-                print(f"Habit '{habit_name}' ---> {new_habit_name} successfully!")
+                print(f"Habit '{habit_name}' ---> '{new_habit_name}' successfully!")
 
 
 
@@ -107,7 +106,6 @@ def main():
             print("\nDeleting a habit...")
 
             habit_name = empty(input("Enter the name of the habit you want to delete: "))
-            habit_name = habit_name.replace(" ", "_")
             
             frequency, success = db.search_habit(habit_name)#Look for the existence of the habit.
             if not success:
@@ -123,7 +121,6 @@ def main():
             print("\nChecking off...")
 
             habit_name = empty(input("Enter the name of the habit you want to check off: "))
-            habit_name = habit_name.replace(" ", "_")
             
             frequency, success = db.search_habit(habit_name)#Look for the existence of the habit and get the frequency of the habit.
             if not success:
@@ -167,6 +164,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
