@@ -184,11 +184,11 @@ def overall_struggle()->int:
 """Build function to ensure correct inputs"""
 
 def empty(value):
-    #This function ensures that the user does not enter an empty value, eliminates innecesary spaces, and avoids the user to introduce special characters.
-    #In case of just unnecessary spaces, the function eliminates them, and don't ask the user to write the sentence again.
+    #This function ensures deletion of unnecessary spaces, no special characters and substitute spaces for underscores
     while True:
         check = value.strip()
         if all(char.isalnum() or char.isspace() for char in check) and check:
+            check = check.replace(" ", "_")
             return check
         print("This value is empty, or has special characters. Please enter valid value.")
         value = input("Try again: ")
@@ -251,7 +251,6 @@ def module():
             print(f"Longest streak: {longest_streak} days")
         elif choice == "4":
             habit_name = empty(input("For which habit do you want to get the longest streak?: "))
-            habit_name = habit_name.replace(" ", "_")
             frequency, success = db.search_habit(habit_name) #In this case frequency is not used, but I have to creaste the variable because the function return 2 values, one is frequency and the other is a boolean.
             if not success:
                 print("This habit does not exist!")
@@ -268,7 +267,6 @@ def module():
             print(f"Longest struggle: {longest_struggle} days")
         elif choice == "6":
             habit_name = empty(input("For which habit do you want to get the longest struggle?: "))
-            habit_name = habit_name.replace(" ", "_")
             frequency, success = db.search_habit(habit_name) #In this case frequency is not used, but I have to creaste the variable because the function return 2 values, one is frequency and the other is a boolean.
             if not success:
                 print("This habit does not exist!")
@@ -283,4 +281,3 @@ def module():
 
         else:
             print("Invalid choice. Please enter a number between 1 and 7.")
-
